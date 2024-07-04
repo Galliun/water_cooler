@@ -53,6 +53,16 @@ const collection = user_data.user_objects.collection;
     }
     userObjects.user_objects.mizu_kiosk = kiosk_id;
 
+    // Get mizu_kios_cap object
+    const kiosk_cap = `0x2::kiosk::KioskOwnerCap`
+    const kiosk_cap_id = find_one_by_type(objectChanges, kiosk_cap);
+
+    if (!kiosk_cap_id) {
+        console.log("Error: Could not find KioskOwnerCap object");
+        process.exit(1);
+    }
+    userObjects.user_objects.mizu_kiosk_cap = kiosk_cap_id;
+
     // Get mizu_nft object
     const mizu_nft = `${packageId}::mizu_nft::MizuNFT`;
     const mizu_nft_id = find_one_by_type(objectChanges, mizu_nft);

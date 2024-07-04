@@ -1,19 +1,20 @@
 {
   "user_objects": {
-    "water_cooler": "0x9e4ef944e0b874820a29ecfaec049c10b2a5865b3d4371c09d56121ce2a19f65",
-    "water_cooler_cap": "0x725d9779e83458864a8c6624521a13917d22dd14375acec9d49f776fc90d3c94",
-    "MintSettings": "0x0b9329b1de9d83bde382cd9ef4a6aaf637724df62720497a865504fa8bfd94de",
-    "MintWarehouse": "0x1ad7ce6b8c2a34d549c6502bf9bcd4b6215dd4db320ba24db91071f542a06ad7",
-    "MintAdminCap": "0x0d88f744bb809c5f26c53d821d63baf501f50ace30a9b2ba260437ff6f412bec",
-    "collection": "0x9a914b98794f1b08abf8f36011dea22d348626d2fa7c7597c52a1b83bbcedce5",
-    "registry": "0xa7f1d67890d7514d98eadd28823e3470ec42f6522d1c2f6b2943f10bb365b98a",
-    "mizu_kiosk": "0x03b9e518681d6af892048751e0f484a347f1c7eede4464c4aa2bcc0c4c905f9f",
-    "mizu_nft": "0x08a33c3a8ff6e0ef5e5589d42ae5bfaab7323b8763bb34e89467acaf48187e8c",
-    "mint": "0xe51d69b81b9f07155b8a0473568f243eb371168cd4744b32175c0576ab02e51e",
-    "mint_cap": "0x009cc8652432241861beb2553ff24f95f3ad8399106567dd0998b74d50881cde",
-    "attributes_cap": "0x2b89c2f7cd866d2bac1cfc7547fdbfbc782f42091a6e3fab9c4c0bdc4a783e21",
-    "image_cap": "0xec0f36b6b243d1c07d13c458d8bb3d3fe8468fcd9c0041c779136f9841f07758",
-    "attributes": "0x8e7ff36c54d95b1e2e101539c2a7f86d9c0a8ed3faa86740fc2e9d12826b4996",
-    "image": "0x6ea497a46cec8b59b6774ea768e37a9aa6658a13aad32e6d419ebb48d1651d8b"
+    "water_cooler": "0x98b16939accd8144b23d1b1302dece346a0d773622bd77c865d78f28983d580a",
+    "water_cooler_cap": "0x71786b5468c7ae4a8d9ea8fbd46aef19580164d40a8e35d24dd22e798cbbb561",
+    "MintSettings": "0xf4c7d8a7de1f772c612c61d853075fc0c29d18e06781778d9594e527b8345343",
+    "MintWarehouse": "0x3bdec11cb53cbf48b90618a13b5fad1cd5dd5d5253b0218a99e002fe3f468d66",
+    "MintAdminCap": "0x882807cabfa6d98b04ec4be7af2f96eb8a08edc769f3683fca13b1b960d7da9b",
+    "collection": "0xcd451269343f173d4d41ea2000cd5dce9dc9913365204947740cec04dc580dd4",
+    "registry": "0xe7e6a2adc577dc1a4724303fb7a046831c50d4c1e7a6782c1dd35cd826458a68",
+    "mizu_kiosk": "0x02aff894d250308e3eadb520d4914c8455c545457d85bae2cd4f3b02ca95904a",
+    "mizu_kiosk_cap": "0x677ec96e75c3e15719f6d52da90b5907332c6476d8dc5377d5241d5d049bdfca",
+    "mizu_nft": "0x874f569bd13a65a0accf62cf0d031459884332bf6d86a6c9ba0fccda882d0eab",
+    "mint": "",
+    "mint_cap": "",
+    "attributes_cap": "",
+    "image_cap": "",
+    "attributes": "",
+    "image": ""
   }
 }
