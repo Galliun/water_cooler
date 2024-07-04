@@ -41,6 +41,9 @@ module galliun::mizu_nft {
         self.kiosk_id
     }
 
+    public fun get_id(self: &MizuNFT): ID {
+        object::id(self)
+    }
     public fun kiosk_owner_cap_id(self: &MizuNFT): ID {
         self.kiosk_owner_cap_id
     }
