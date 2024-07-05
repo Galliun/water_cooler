@@ -1,0 +1,20 @@
+{
+  "user_objects": {
+    "water_cooler": "0x98b16939accd8144b23d1b1302dece346a0d773622bd77c865d78f28983d580a",
+    "water_cooler_cap": "0x71786b5468c7ae4a8d9ea8fbd46aef19580164d40a8e35d24dd22e798cbbb561",
+    "MintSettings": "0xf4c7d8a7de1f772c612c61d853075fc0c29d18e06781778d9594e527b8345343",
+    "MintWarehouse": "0x3bdec11cb53cbf48b90618a13b5fad1cd5dd5d5253b0218a99e002fe3f468d66",
+    "MintAdminCap": "0x882807cabfa6d98b04ec4be7af2f96eb8a08edc769f3683fca13b1b960d7da9b",
+    "collection": "0xcd451269343f173d4d41ea2000cd5dce9dc9913365204947740cec04dc580dd4",
+    "registry": "0xe7e6a2adc577dc1a4724303fb7a046831c50d4c1e7a6782c1dd35cd826458a68",
+    "mizu_kiosk": "0x02aff894d250308e3eadb520d4914c8455c545457d85bae2cd4f3b02ca95904a",
+    "mizu_kiosk_cap": "0x677ec96e75c3e15719f6d52da90b5907332c6476d8dc5377d5241d5d049bdfca",
+    "mizu_nft": "0x874f569bd13a65a0accf62cf0d031459884332bf6d86a6c9ba0fccda882d0eab",
+    "mint": "",
+    "mint_cap": "",
+    "attributes_cap": "",
+    "image_cap": "",
+    "attributes": "",
+    "image": ""
+  }
+}
