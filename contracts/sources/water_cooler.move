@@ -285,52 +285,54 @@ module galliun::water_cooler {
         };
     }
     
-    // public fun batch_reveal_nfts(
-    //     _: &WaterCoolerAdminCap,
-    //     self: &mut WaterCooler,
-    //     registry: &Registry,
-    //     collection: &Collection,
-    //     mut nfts: vector<Capsule>,
-    //     mut keys: vector<vector<String>>,
-    //     mut values: vector<vector<String>>,
-    //     // _image: Image,
-    //     mut image_urls: vector<String>,
-    //     ctx: &mut TxContext
-    // ) {
-    //     assert!(self.registry_id == object::id(registry), ERegistryDoesNotMatchCooler);
-    //     assert!(self.collection_id == object::id(collection), ECollectionDoesNotMatchCooler);
-    //     let mut number = collection::supply(collection) as u64 - self.revealed_nfts.length(); 
+    public fun batch_reveal_nfts(
+        _: &WaterCoolerAdminCap,
+        self: &mut WaterCooler,
+        registry: &Registry,
+        collection: &Collection,
+        mut nfts: vector<Capsule>,
+        mut keys: vector<vector<String>>,
+        mut values: vector<vector<String>>,
+        // _image: Image,
+        mut image_urls: vector<String>,
+        ctx: &mut TxContext
+    ) : vector<Capsule> {
+        assert!(self.registry_id == object::id(registry), ERegistryDoesNotMatchCooler);
+        assert!(self.collection_id == object::id(collection), ECollectionDoesNotMatchCooler);
+        let mut number = collection::supply(collection) as u64 - self.revealed_nfts.length(); 
 
-    //     while (!keys.is_empty()) {
-    //         let mut nft = nfts.borrow_mut(number);
-    //         let nft_id = object::id(nft);
-    //         // assert!(registry.is_nft_registered(nft_id), ENFTNotFromCollection);
-    //         assert!(!self.revealed_nfts.contains(&nft_id), ENFTAlreadyRevealed);
+        while (!keys.is_empty()) {
+            let mut nft = nfts.borrow_mut(number);
+            let nft_id = object::id(nft);
+            // assert!(registry.is_nft_registered(nft_id), ENFTNotFromCollection);
+            assert!(!self.revealed_nfts.contains(&nft_id), ENFTAlreadyRevealed);
 
-    //         let mut attr_keys = keys.pop_back();
-    //         let attr_values = values.pop_back();
+            let mut attr_keys = keys.pop_back();
+            let attr_values = values.pop_back();
 
-    //         let attributes = attributes::admin_new(
-    //             attr_keys,
-    //             attr_values,
-    //             ctx
-    //         );
+            let attributes = attributes::admin_new(
+                attr_keys,
+                attr_values,
+                ctx
+            );
 
-    //         // capsule::set_feilds(nft, attributes, image_urls.pop_back());
+            // capsule::set_feilds(nft, attributes, image_urls.pop_back());
 
-    //         capsule::set_attributes(nft, attributes);
-    //         // capsule::set_image(nft, image);
-    //         capsule::set_image_url(nft, image_urls.pop_back());
+            capsule::set_attributes(nft, attributes);
+            // capsule::set_image(nft, image);
+            capsule::set_image_url(nft, image_urls.pop_back());
 
-    //         self.revealed_nfts.push_back(nft_id);
+            self.revealed_nfts.push_back(nft_id);
 
-    //         number = number - 1;
-    //     };
+            number = number - 1;
+        };
 
-    //     if (self.revealed_nfts.length() == collection::supply(collection) as u64) {
-    //         self.is_revealed = true;
-    //     }
-    // }
+        if (self.revealed_nfts.length() == collection::supply(collection) as u64) {
+            self.is_revealed = true;
+        };
+
+        nfts
+    }
     
     public fun set_treasury(_: &WaterCoolerAdminCap, self: &mut WaterCooler, treasury: address) {
         self.treasury = treasury;
