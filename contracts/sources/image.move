@@ -1,4 +1,5 @@
 module galliun::image {
+    use std::string::{String};
 
     // === Imports ===
 
@@ -10,9 +11,9 @@ module galliun::image {
 
     public struct Image has key, store {
         id: UID,
-        name: vector<u8>,
-        description: vector<u8>,
-        data: vector<u8>, // Binary data of the image
+        name: String,
+        description: String,
+        data: String, // Binary data of the image
     }
 
 
@@ -25,9 +26,9 @@ module galliun::image {
     /// Function to inscribe a new image on-chain
     #[allow(lint(self_transfer))]
     public fun inscribe_image(
-        name: vector<u8>, 
-        description: vector<u8>, 
-        data: vector<u8>, 
+        name: String, 
+        description: String, 
+        data: String, 
         ctx: &mut TxContext
     ) {
         let image = Image {
@@ -40,7 +41,7 @@ module galliun::image {
     }
 
     /// Function to get image metadata
-    public fun get_image_metadata(image: &Image): (vector<u8>, vector<u8>, vector<u8>) {
+    public fun get_image_metadata(image: &Image): (String, String, String) {
         (image.name, image.description, image.data)
     }
 }

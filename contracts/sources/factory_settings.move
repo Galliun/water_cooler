@@ -61,7 +61,7 @@ module galliun::factory_settings {
     // === Test Functions ===
 
     #[test_only]
-    public fun init_for_cooler(ctx: &mut TxContext) {
+    public fun init_for_factory_settings(ctx: &mut TxContext) {
         init(ctx);
     }
 }

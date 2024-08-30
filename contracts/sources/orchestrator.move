@@ -9,7 +9,6 @@ module galliun::orchestrator {
         kiosk::{Self},
         package::{Self},
         sui::{SUI},
-        table_vec::{Self, TableVec},
         transfer_policy::{TransferPolicy},
     };
     use galliun::{
@@ -17,6 +16,8 @@ module galliun::orchestrator {
         factory_settings::{FactorySetings},
         water_cooler::{Self, WaterCooler},
         capsule::{Capsule},
+        warehouse::{Self, Warehouse},
+        settings::{Self, Settings},
         // image::{Image},
         // registry::{Registry}
     };
@@ -30,7 +31,7 @@ module galliun::orchestrator {
     const EInvalidStatusNumber: u64 = 4;
     const EInvalidTicketForMintPhase: u64 = 5;
     const EMintNotLive: u64 = 6;
-    const EMintWarehouseAlreadyInitialized: u64 = 7;
+    //const EMintWarehouseAlreadyInitialized: u64 = 7;
     const EMintWarehouseNotEmpty: u64 = 8;
     const EMintWarehouseNotInitialized: u64 = 9;
     // const EMizuNFTNotRevealed: u64 = 10;
@@ -49,42 +50,6 @@ module galliun::orchestrator {
     // === Structs ===
 
     public struct ORCHESTRATOR has drop {}
-
-
-    public struct Settings has key {
-        id: UID,
-        // We add this id so we can insure that the water cooler that
-        // is passed coresponds with the current mint settings
-        // We have to add it here because we cannot do the check in the
-        // watercooler module as there will be a circular dependency
-        // between the Setting in the Mint module and the Water Cooler
-        // in the watercooler modules
-        waterCoolerId: ID,
-        // This is the price that must be paid by the minter to get the NFT
-        price: u64,
-        /// The phase determins the current minting phase
-        /// 1 = og
-        /// 2 = whiteList
-        /// 3 = public
-        phase: u8,
-        /// The state determings whether the mint is active or not
-        /// 0 = inactive
-        /// 1 = active
-        status: u8,
-    }
-
-    public struct Warehouse has key {
-        id: UID,
-        // We add this id so we can insure that the water cooler that
-        // is passed coresponds with the current mint settings
-        // We have to add it here because we cannot do the check in the
-        // watercooler module as there will be a circular dependency
-        // between the Setting in the Mint module and the Water Cooler
-        // in the watercooler modules
-        waterCoolerId: ID,
-        nfts: TableVec<Capsule>,
-        is_initialized: bool,
-    }
 
     public struct WhitelistTicket has key {
         id: UID,
@@ -140,8 +105,8 @@ module galliun::orchestrator {
 
      // === Public-view Functions ===
 
-    public fun get_mintwarehouse_length(self: &Warehouse) : u64 {
-        self.nfts.length()
+    public fun get_mintwarehouse_length(warehouse: &Warehouse) : u64 {
+        warehouse.count()
     }
 
     // === Public-Mutative Functions ===
@@ -152,18 +117,17 @@ module galliun::orchestrator {
         factorySettings: &FactorySetings,
         warehouse: &mut Warehouse,
         settings: &Settings,
-        policy: &TransferPolicy<Capsule>,
         payment: Coin<SUI>,        
         ctx: &mut TxContext,
     ) {
-        assert!(warehouse.waterCoolerId == object::id(waterCooler), EWearhouseDoesNotMatchCooler);
-        assert!(settings.waterCoolerId == object::id(waterCooler), ESettingsDoesNotMatchCooler);
-        assert!(warehouse.nfts.length() > 0, EWarehouseIsEmpty);
-        assert!(settings.phase == 3, EWrongPhase);
-        assert!(settings.status == MINT_STATE_ACTIVE, EMintNotLive);
-        assert!(payment.value() == settings.price, EInvalidPaymentAmount);
+        assert!(waterCooler.get_warehouse_id() == object::id(warehouse), EWearhouseDoesNotMatchCooler);
+        assert!(waterCooler.get_settings_id() == object::id(settings), ESettingsDoesNotMatchCooler);
+        assert!(warehouse.count() > 0, EWarehouseIsEmpty);
+        assert!(settings.phase() == 3, EWrongPhase);
+        assert!(settings.status() == MINT_STATE_ACTIVE, EMintNotLive);
+        assert!(payment.value() == settings.price(), EInvalidPaymentAmount);
 
-        mint_capsule(factorySettings, waterCooler, warehouse, policy, payment, ctx);
+        mint_capsule(factorySettings, waterCooler, warehouse, payment, ctx);
     }
 
     #[allow(unused_variable)]
@@ -173,22 +137,21 @@ module galliun::orchestrator {
         waterCooler: &WaterCooler,
         warehouse: &mut Warehouse,
         settings: &Settings,
-        policy: &TransferPolicy<Capsule>,
         payment: Coin<SUI>,
         ctx: &mut TxContext,
     ) {
-        assert!(warehouse.waterCoolerId == object::id(waterCooler), EWearhouseDoesNotMatchCooler);
-        assert!(settings.waterCoolerId == object::id(waterCooler), ESettingsDoesNotMatchCooler);
+        assert!(waterCooler.get_warehouse_id() == object::id(warehouse), EWearhouseDoesNotMatchCooler);
+        assert!(waterCooler.get_settings_id() == object::id(settings), ESettingsDoesNotMatchCooler);
 
         let WhitelistTicket { id, name, image_url, waterCoolerId, phase } = ticket;
         
-        assert!(settings.status == MINT_STATE_ACTIVE, EMintNotLive);
-        assert!(phase == settings.phase, EInvalidTicketForMintPhase);
+        assert!(settings.status() == MINT_STATE_ACTIVE, EMintNotLive);
+        assert!(phase == settings.phase(), EInvalidTicketForMintPhase);
         assert!(waterCoolerId == object::id(waterCooler), EInvalidTicketForMintPhase);
-        assert!(payment.value() == settings.price, EInvalidPaymentAmount);
+        assert!(payment.value() == settings.price(), EInvalidPaymentAmount);
 
 
-        mint_capsule(factorySettings, waterCooler, warehouse, policy, payment, ctx);
+        mint_capsule(factorySettings, waterCooler, warehouse, payment, ctx);
         id.delete();
     }
 
@@ -199,21 +162,20 @@ module galliun::orchestrator {
         waterCooler: &WaterCooler,
         warehouse: &mut Warehouse,
         settings: &Settings,
-        policy: &TransferPolicy<Capsule>,
         payment: Coin<SUI>,
         ctx: &mut TxContext,
     ) {
-        assert!(warehouse.waterCoolerId == object::id(waterCooler), EWearhouseDoesNotMatchCooler);
-        assert!(settings.waterCoolerId == object::id(waterCooler), ESettingsDoesNotMatchCooler);
+        assert!(waterCooler.get_warehouse_id() == object::id(warehouse), EWearhouseDoesNotMatchCooler);
+        assert!(waterCooler.get_settings_id() == object::id(settings), ESettingsDoesNotMatchCooler);
 
         let OriginalGangsterTicket { id, name, image_url, waterCoolerId, phase } = ticket;
         
-        assert!(settings.status == MINT_STATE_ACTIVE, EMintNotLive);
-        assert!(phase == settings.phase, EInvalidTicketForMintPhase);
+        assert!(settings.status() == MINT_STATE_ACTIVE, EMintNotLive);
+        assert!(phase == settings.phase(), EInvalidTicketForMintPhase);
         assert!(waterCoolerId == object::id(waterCooler), EInvalidTicketForMintPhase);
-        assert!(payment.value() == settings.price, EInvalidPaymentAmount);
+        assert!(payment.value() == settings.price(), EInvalidPaymentAmount);
 
-        mint_capsule(factorySettings, waterCooler, warehouse, policy, payment, ctx);
+        mint_capsule(factorySettings, waterCooler, warehouse, payment, ctx);
         id.delete();
     }
 
@@ -226,19 +188,10 @@ module galliun::orchestrator {
         mut nfts: vector<Capsule>,
         warehouse: &mut Warehouse,
     ) {
-        assert!(waterCooler.get_is_revealed(), ENFTNotAllReaveled);        
+        assert!(!waterCooler.get_is_revealed(), ENFTNotAllReaveled);        
         assert!(object::id(warehouse) == cap.`for_warehouse`, ENotOwner);        
-        assert!(warehouse.is_initialized == false, EMintWarehouseAlreadyInitialized);
-
-        while (!nfts.is_empty()) {
-            let nft = nfts.pop_back();
-            warehouse.nfts.push_back(nft);
-        };
-        nfts.destroy_empty();
-
-        if (warehouse.nfts.length() as u64 == waterCooler.supply()) {
-            warehouse.is_initialized = true;
-        };
+       
+        warehouse.stock(waterCooler.supply(), nfts);
     }
 
     /// Destroy an empty mint warehouse when it's no longer needed.
@@ -246,20 +199,11 @@ module galliun::orchestrator {
         cap: &OrchAdminCap,
         warehouse: Warehouse,
     ) {
-        assert!(warehouse.nfts.is_empty(), EMintWarehouseNotEmpty);
-        assert!(warehouse.is_initialized == true, EMintWarehouseNotInitialized);
+        assert!(warehouse.is_empty(), EMintWarehouseNotEmpty);
+        assert!(warehouse.is_initialized() == true, EMintWarehouseNotInitialized);
+        assert!(object::id(&warehouse) == cap.`for_warehouse`, ENotOwner);   
 
-        let Warehouse {
-            id,
-            waterCoolerId: _,
-            nfts,
-            is_initialized: _,
-        } = warehouse;
-
-        assert!(object::uid_to_inner(&id) == cap.`for_warehouse`, ENotOwner);        
-
-        nfts.destroy_empty();
-        id.delete();
+        warehouse.delete();
     }
 
     // Set mint price, status, phase
@@ -271,7 +215,7 @@ module galliun::orchestrator {
         assert!(object::id(settings) == cap.`for_settings`, ENotOwner);        
 
         assert!(price >= 0, EInvalidPrice);
-        settings.price = price;
+        settings.set_price(price);
     }
 
     public fun set_mint_status(
@@ -281,7 +225,7 @@ module galliun::orchestrator {
     ) {
         assert!(object::id(settings) == cap.`for_settings`, ENotOwner);
         assert!(status == MINT_STATE_INACTIVE || status == MINT_STATE_ACTIVE, EInvalidStatusNumber);
-        settings.status = status;
+        settings.set_status(status);
     }
 
     public fun set_mint_phase(
@@ -291,7 +235,7 @@ module galliun::orchestrator {
     ) {
         assert!(object::id(settings) == cap.`for_settings`, ENotOwner);
         assert!(phase >= 1 && phase <= 3, EInvalidPhaseNumber);
-        settings.phase = phase;
+        settings.set_phase(phase);
     }
 
     public fun create_og_ticket(
@@ -330,25 +274,9 @@ module galliun::orchestrator {
 
     // === Package functions ===
 
-    public(package) fun create_mint_distributer(waterCoolerId: ID, ctx: &mut TxContext): (Settings, Warehouse) {
-        // This might need to be moved to a seperate function
-        // that will be called by the owner of the WaterCooler
-        let settings = Settings {
-            id: object::new(ctx),
-            waterCoolerId,
-            price: 0,
-            phase: 0,
-            status: 0,
-        };
-        
-        // This might need to be moved to a seperate function
-        // that will be called by the owner of the WaterCooler
-        let warehouse = Warehouse {
-            id: object::new(ctx),
-            waterCoolerId,
-            nfts: table_vec::empty(ctx),
-            is_initialized: false,
-        };
+    public(package) fun create_mint_distributer(ctx: &mut TxContext): (Settings, Warehouse) {
+        let settings = settings::new(ctx);
+        let warehouse = warehouse::new(ctx);
 
         // Here we transfer the mint admin cap to the person that bought the WaterCooler
         transfer::transfer(
@@ -363,15 +291,6 @@ module galliun::orchestrator {
         (settings, warehouse)
     }
     
-    #[allow(lint(share_owned))]
-    public(package) fun transfer_setting(self: Settings) {
-        transfer::share_object(self);
-    }
-
-    #[allow(lint(share_owned))]
-    public(package) fun transfer_warehouse(self: Warehouse) {
-        transfer::share_object(self);
-    }
 
     // === Private Functions ===
 
@@ -380,12 +299,11 @@ module galliun::orchestrator {
         factorySettings: &FactorySetings,
         waterCooler: &WaterCooler,
         warehouse: &mut Warehouse,
-        _policy: &TransferPolicy<Capsule>,
         mut payment: Coin<SUI>,
         ctx: &mut TxContext,
     ) {
         // Safely unwrap the NFT from the warehouse
-        let nft = warehouse.nfts.pop_back();
+        let nft = warehouse.pop_nft();
 
         // Create a new kiosk and its owner capability
         let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
@@ -404,9 +322,6 @@ module galliun::orchestrator {
         transfer::public_share_object(kiosk);
 
         let coin_balance = payment.balance_mut();
-        // let fees = coin_balance.split(factorySettings.get_mint_fee());
-
-        // let amount = fees.value();
         let profits = coin::take(coin_balance, factorySettings.get_mint_fee(), ctx);
 
         factorySettings.send_fees(profits);
@@ -418,13 +333,7 @@ module galliun::orchestrator {
 
     // === Test Functions ===
     #[test_only]
-    public fun init_for_mint(ctx: &mut TxContext) {
+    public fun init_for_orchestrator(ctx: &mut TxContext) {
         init(ORCHESTRATOR {}, ctx);
     }
-
-    // #[test_only]
-    // public fun get_nft_id(self: &Mint) : ID {
-    //    let nft = self.nft.borrow();
-    //    object::id(nft)
-    // }
 }

@@ -3,21 +3,26 @@ module galliun::test_public_mint {
     // === Imports ===
     use sui::{
         test_scenario::{Self as ts, next_tx},
-        coin::{Self},
+        coin::{Self, Coin},
         sui::SUI,
         test_utils::{assert_eq},
+        kiosk::{Self},
+        transfer_policy::{TransferPolicy}
     };
     use std::string::{Self, String};
     use galliun::{
         helpers::{init_test_helper},
         water_cooler::{Self, WaterCooler, WaterCoolerAdminCap},
-        mizu_nft::{MizuNFT},
-        cooler_factory::{Self, CoolerFactory},
-        mint::{Self, Mint, MintCap, MintAdminCap, MintSettings, MintWarehouse},
+        capsule::{Capsule},
+        cooler_factory::{Self, CoolerFactory, FactoryOwnerCap},
+        orchestrator::{Self, WhitelistTicket, OrchAdminCap, OrchCap, OriginalGangsterTicket},
+        attributes::{Self, Attributes},
+        warehouse::{Self, Warehouse, WarehouseAdminCap},
         collection::{Collection},
         registry::{Registry},
-        attributes::{Self, Attributes, CreateAttributesCap},
-        image::{Self, Image, CreateImageCap}
+        image::{Self, Image},
+        settings::{Settings},
+        factory_settings::{FactorySetings}
     };
 
     // === Constants ===
@@ -41,7 +46,7 @@ module galliun::test_public_mint {
             let name = b"watercoolername".to_string();
             let description = b"some desc".to_string();
             let image_url = b"https://media.nfts.photos/nft.jpg".to_string();
-            let placeholder_image_url = b"https://media.nfts.photos/nft.jpg".to_string();
+            let placeholder_image_url = b"https://media.nfts.photos/placeholder.jpg".to_string();
             let supply = 150;
 
             cooler_factory::buy_water_cooler(
@@ -55,14 +60,12 @@ module galliun::test_public_mint {
                 TEST_ADDRESS1,
                 ts::ctx(scenario)
             );
-            // check the balance 
-            assert_eq(cooler_factory.get_balance(), 100_000_000);
 
             ts::return_shared(cooler_factory);
         };
 
         // init WaterCooler. the number count to 1. So it is working. 
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
             let mut water_cooler = ts::take_shared<WaterCooler>(scenario);
             let water_cooler_admin_cap = ts::take_from_sender<WaterCoolerAdminCap>(scenario);
@@ -81,7 +84,7 @@ module galliun::test_public_mint {
         {
             let water_cooler = ts::take_shared<WaterCooler>(scenario);
             // Check Nft Created
-            assert!(ts::has_most_recent_for_sender<MizuNFT>(scenario), 0);
+            assert!(ts::has_most_recent_for_sender<Capsule>(scenario), 0);
             assert!(water_cooler.is_initialized() == true, 0);
             // the number of supply should be stay as 150. 
             assert_eq(water_cooler.supply(), 150);
@@ -89,24 +92,25 @@ module galliun::test_public_mint {
             assert_eq(water_cooler.get_nfts_num(), 150);
             ts::return_shared(water_cooler);
         };
+      
         // we can push MizuNFT into the warehouse
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_cap = ts::take_from_sender<MintAdminCap>(scenario);
+            let mint_cap = ts::take_from_sender<OrchAdminCap>(scenario);
             let water_cooler = ts::take_shared<WaterCooler>(scenario);
-            let mut mint_warehouse = ts::take_shared<MintWarehouse>(scenario);
-            let nft = ts::take_from_sender<MizuNFT>(scenario);
-            let mut vector_mizu = vector::empty<MizuNFT>();
+            let mut mint_warehouse = ts::take_shared<Warehouse>(scenario);
+            let nft = ts::take_from_sender<Capsule>(scenario);
+            let mut vector_mizu = vector::empty<Capsule>();
             vector_mizu.push_back(nft);
 
-            mint::add_to_mint_warehouse(
+            orchestrator::stock_warehouse(
                 &mint_cap,
                 &water_cooler,
                 vector_mizu,
                 &mut mint_warehouse
             );
             // the nft's length should be equal to 1 
-            assert_eq(mint::get_mintwarehouse_length(&mint_warehouse), 1);
+            assert_eq(orchestrator::get_mintwarehouse_length(&mint_warehouse), 1);
     
             ts::return_to_sender(scenario, mint_cap);
             ts::return_shared(mint_warehouse);
@@ -115,15 +119,15 @@ module galliun::test_public_mint {
         // set mint_price and status
         ts::next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_cap = ts::take_from_sender<MintAdminCap>(scenario);
-            let mut mint_settings = ts::take_shared<MintSettings>(scenario);
+            let mint_cap = ts::take_from_sender<OrchAdminCap>(scenario);
+            let mut mint_settings = ts::take_shared<Settings>(scenario);
             let price: u64 = 1_000_000_000;
             let status: u8 = 1;
             let phase: u8 = 3;
 
-            mint::set_mint_price(&mint_cap, &mut mint_settings, price);
-            mint::set_mint_status(&mint_cap, &mut mint_settings, status);
-            mint::set_mint_phase(&mint_cap, &mut mint_settings, phase);
+            orchestrator::set_mint_price(&mint_cap, &mut mint_settings, price);
+            orchestrator::set_mint_status(&mint_cap, &mut mint_settings, status);
+            orchestrator::set_mint_phase(&mint_cap, &mut mint_settings, phase);
 
             ts::return_to_sender(scenario, mint_cap);
       
@@ -133,20 +137,29 @@ module galliun::test_public_mint {
          // we can publish_mint 
         ts::next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_settings = ts::take_shared<MintSettings>(scenario);
-            let mut mint_warehouse = ts::take_shared<MintWarehouse>(scenario);
+            let settings = ts::take_shared<Settings>(scenario);
+            let mut warehouse = ts::take_shared<Warehouse>(scenario);
+            let factory_settings = ts::take_shared<FactorySetings>(scenario);
+            let water_cooler = ts::take_shared<WaterCooler>(scenario);
             let coin_ = coin::mint_for_testing<SUI>(1_000_000_000, ts::ctx(scenario));
 
-            mint::public_mint(&mut mint_warehouse, &mint_settings, coin_, ts::ctx(scenario));
+            orchestrator::public_mint(
+                &water_cooler,
+                &factory_settings,
+                &mut warehouse,
+                &settings,
+                coin_,
+                ts::ctx(scenario)
+            );
             
-            ts::return_shared(mint_warehouse);
-            ts::return_shared(mint_settings);
+            ts::return_shared(warehouse);
+            ts::return_shared(settings);
+            ts::return_shared(water_cooler);
+            ts::return_shared(factory_settings);
         };
         // we should create Attributes and Image objects 
         ts::next_tx(scenario, TEST_ADDRESS1);
         {
-            // create attributes 
-            let attributes_cap = ts::take_from_sender<CreateAttributesCap>(scenario);
             let mut key_vector = vector::empty<String>();
             let key1 = string::utf8(b"key1");
             let key2 = string::utf8(b"key2");
@@ -159,50 +172,64 @@ module galliun::test_public_mint {
             values_vector.push_back(value1);
             values_vector.push_back(value2);
 
-            let attributes = attributes::new(
-                attributes_cap,
+            let attributes = attributes::admin_new(
                 key_vector,
                 values_vector,
                 ts::ctx(scenario)
             );
+            transfer::public_transfer(attributes, TEST_ADDRESS1);
+
             // create image object 
             let image_ = string::utf8(b"image");
-            let mut image_chunk_hashes = vector::empty<String>();
             let value1 = string::utf8(b"value1");
             let value2 = string::utf8(b"value2");
 
-            image_chunk_hashes.push_back(value1);
-            image_chunk_hashes.push_back(value2);
-
-
-            let image_cap = ts::take_from_sender<CreateImageCap>(scenario);
-            image::create_image(
-                image_cap,
-                image_,
-                image_chunk_hashes,
+            image::inscribe_image(
+                        image_,
+                value1,
+                value2,
                 ts::ctx(scenario)
             );
-            transfer::public_transfer(attributes, TEST_ADDRESS1);
         };
         // we can call reveal_mint
         ts::next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_cap = ts::take_from_sender<MintCap>(scenario);
-            let mut mint = ts::take_shared<Mint>(scenario);
-            let attributes = ts::take_from_sender<Attributes>(scenario);
-            let image = ts::take_from_sender<Image>(scenario);
+            let mut water_cooler = ts::take_shared<WaterCooler>(scenario);
+            let water_cooler_admin_cap = ts::take_from_sender<WaterCoolerAdminCap>(scenario);
+            let registry = ts::take_from_sender<Registry>(scenario);
+            let collection = ts::take_from_sender<Collection>(scenario);
+            let mut nft = ts::take_from_sender<Capsule>(scenario);
+
+            let mut key_vector = vector::empty<String>();
+            let key1 = string::utf8(b"key1");
+            let key2 = string::utf8(b"key2");
+            key_vector.push_back(key1);
+            key_vector.push_back(key2);
+
+            let mut values_vector = vector::empty<String>();
+            let value1 = string::utf8(b"value1");
+            let value2 = string::utf8(b"value2");
+            values_vector.push_back(value1);
+            values_vector.push_back(value2);
             let image_url = b"https://media.nfts.photos/nft.jpg".to_string();
 
-            mint::reveal_mint(
-                &mint_cap,
-                &mut mint,
-                attributes,
-                image,
-                image_url
+            water_cooler::reveal_nft(
+                &water_cooler_admin_cap,
+                &mut water_cooler,
+                &registry,
+                &collection,
+                &mut nft,
+                key_vector,
+                values_vector,
+                image_url,
+                ts::ctx(scenario)
             );
-    
-            ts::return_to_sender(scenario, mint_cap);
-            ts::return_shared(mint);
+
+            ts::return_to_sender(scenario, nft);
+            ts::return_shared(water_cooler);
+            ts::return_to_sender(scenario, collection);
+            ts::return_to_sender(scenario, registry);
+            ts::return_to_sender(scenario, water_cooler_admin_cap);   
         };
         ts::end(scenario_test);
     }

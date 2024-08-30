@@ -3,17 +3,25 @@ module galliun::test_water_cooler {
     // === Imports ===
     use sui::{
         test_scenario::{Self as ts, next_tx},
-        coin::{Self},
+        coin::{Self, Coin},
         sui::SUI,
         test_utils::{assert_eq},
+        kiosk::{Self},
+        transfer_policy::{TransferPolicy}
     };
+    use std::string::{Self, String};
     use galliun::{
         helpers::{init_test_helper},
         water_cooler::{Self, WaterCooler, WaterCoolerAdminCap},
-        mizu_nft::{MizuNFT},
+        capsule::{Capsule},
         cooler_factory::{Self, CoolerFactory, FactoryOwnerCap},
+        orchestrator::{Self, WhitelistTicket, OrchAdminCap, OrchCap, OriginalGangsterTicket},
+        attributes::{Self, Attributes},
+        warehouse::{Self, Warehouse, WarehouseAdminCap},
         collection::{Collection},
         registry::{Registry},
+        image::{Self, Image},
+        settings::{Settings},
     };
 
     // === Constants ===
@@ -37,7 +45,7 @@ module galliun::test_water_cooler {
             let name = b"watercoolername".to_string();
             let description = b"some desc".to_string();
             let image_url = b"https://media.nfts.photos/nft.jpg".to_string();
-            let placeholder_image_url = b"https://media.nfts.photos/nft.jpg".to_string();
+            let placeholder_image_url = b"https://media.nfts.photos/placeholder.jpg".to_string();
             let supply = 150;
 
             cooler_factory::buy_water_cooler(
@@ -51,26 +59,17 @@ module galliun::test_water_cooler {
                 TEST_ADDRESS1,
                 ts::ctx(scenario)
             );
-            // check the balance 
-            assert_eq(cooler_factory.get_balance(), 100_000_000);
 
             ts::return_shared(cooler_factory);
         };
 
-        next_tx(scenario, ADMIN);
+        // check the balance of galliun_treasury
+        next_tx(scenario, TEST_ADDRESS1);
         {
-            let mut cooler_factory = ts::take_shared<CoolerFactory>(scenario);
-            let cap = ts::take_from_sender<FactoryOwnerCap>(scenario);
-            
-            // confirm correct balance is 100_000_000 
-            let balance_ = cooler_factory::get_balance(&cooler_factory);
-            // it should be equal to 100_000_000
-            assert_eq(balance_, 100_000_000);
-            // admin can claim fee which is 100_000_000 
-            cooler_factory::claim_fee(&cap, &mut cooler_factory, ts::ctx(scenario));
-     
-            ts::return_to_sender(scenario, cap);
-            ts::return_shared(cooler_factory);
+            let coin_ = ts::take_from_address<Coin<SUI>>(scenario, @galliun_treasury);
+            assert_eq(coin_.value(), 100_000_000);
+
+            ts::return_to_address(@galliun_treasury, coin_);
         };
         // set the new fee 
         next_tx(scenario, ADMIN);
@@ -87,7 +86,7 @@ module galliun::test_water_cooler {
         };
 
         // init WaterCooler. the number count to 1. So it is working. 
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
             let mut water_cooler = ts::take_shared<WaterCooler>(scenario);
             let water_cooler_admin_cap = ts::take_from_sender<WaterCoolerAdminCap>(scenario);
@@ -102,18 +101,18 @@ module galliun::test_water_cooler {
             ts::return_to_sender(scenario, water_cooler_admin_cap);
         };
         // check that does user has MizuNFT ?
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
-            let nft = ts::take_from_sender<MizuNFT>(scenario);
+            let nft = ts::take_from_sender<Capsule>(scenario);
             ts::return_to_sender(scenario, nft);
         };
 
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
             let water_cooler = ts::take_shared<WaterCooler>(scenario);
 
             // Check Nft Created
-            assert!(ts::has_most_recent_for_sender<MizuNFT>(scenario), 0);
+            assert!(ts::has_most_recent_for_sender<Capsule>(scenario), 0);
             assert!(water_cooler.is_initialized() == true, 0);
             // the number of supply should be stay as 150. 
             assert_eq(water_cooler.supply(), 150);

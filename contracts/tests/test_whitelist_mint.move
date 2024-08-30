@@ -3,18 +3,26 @@ module galliun::test_whitelist_mint {
     // === Imports ===
     use sui::{
         test_scenario::{Self as ts, next_tx},
-        coin::{Self},
+        coin::{Self, Coin},
         sui::SUI,
         test_utils::{assert_eq},
+        kiosk::{Self},
+        transfer_policy::{TransferPolicy}
     };
+    use std::string::{Self, String};
     use galliun::{
         helpers::{init_test_helper},
         water_cooler::{Self, WaterCooler, WaterCoolerAdminCap},
-        mizu_nft::{MizuNFT},
-        cooler_factory::{Self, CoolerFactory},
-        mint::{Self, MintAdminCap, MintSettings, MintWarehouse, WhitelistTicket},
+        capsule::{Capsule},
+        cooler_factory::{Self, CoolerFactory, FactoryOwnerCap},
+        orchestrator::{Self, WhitelistTicket, OrchAdminCap, OrchCap, OriginalGangsterTicket},
+        attributes::{Self, Attributes},
+        warehouse::{Self, Warehouse, WarehouseAdminCap},
         collection::{Collection},
         registry::{Registry},
+        image::{Self, Image},
+        settings::{Settings},
+        factory_settings::{FactorySetings}
     };
 
     // === Constants ===
@@ -38,7 +46,7 @@ module galliun::test_whitelist_mint {
             let name = b"watercoolername".to_string();
             let description = b"some desc".to_string();
             let image_url = b"https://media.nfts.photos/nft.jpg".to_string();
-            let placeholder_image_url = b"https://media.nfts.photos/nft.jpg".to_string();
+            let placeholder_image_url = b"https://media.nfts.photos/placeholder.jpg".to_string();
             let supply = 150;
 
             cooler_factory::buy_water_cooler(
@@ -52,10 +60,17 @@ module galliun::test_whitelist_mint {
                 TEST_ADDRESS1,
                 ts::ctx(scenario)
             );
-            // check the balance 
-            assert_eq(cooler_factory.get_balance(), 100_000_000);
 
             ts::return_shared(cooler_factory);
+        };
+
+        // check the balance of galliun_treasury
+        next_tx(scenario, TEST_ADDRESS1);
+        {
+            let coin_ = ts::take_from_address<Coin<SUI>>(scenario, @galliun_treasury);
+            assert_eq(coin_.value(), 100_000_000);
+
+            ts::return_to_address(@galliun_treasury, coin_);
         };
 
         // init WaterCooler. the number count to 1. So it is working. 
@@ -74,11 +89,12 @@ module galliun::test_whitelist_mint {
             ts::return_to_sender(scenario, water_cooler_admin_cap);
         };
 
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
             let water_cooler = ts::take_shared<WaterCooler>(scenario);
+
             // Check Nft Created
-            assert!(ts::has_most_recent_for_sender<MizuNFT>(scenario), 0);
+            assert!(ts::has_most_recent_for_sender<Capsule>(scenario), 0);
             assert!(water_cooler.is_initialized() == true, 0);
             // the number of supply should be stay as 150. 
             assert_eq(water_cooler.supply(), 150);
@@ -86,41 +102,41 @@ module galliun::test_whitelist_mint {
             assert_eq(water_cooler.get_nfts_num(), 150);
             ts::return_shared(water_cooler);
         };
-        // we can push MizuNFT into the warehouse
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        //we can push MizuNFT into the warehouse
+        next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_cap = ts::take_from_sender<MintAdminCap>(scenario);
+            let mint_cap = ts::take_from_sender<OrchAdminCap>(scenario);
             let water_cooler = ts::take_shared<WaterCooler>(scenario);
-            let mut mint_warehouse = ts::take_shared<MintWarehouse>(scenario);
-            let nft = ts::take_from_sender<MizuNFT>(scenario);
-            let mut vector_mizu = vector::empty<MizuNFT>();
+            let mut mint_warehouse = ts::take_shared<Warehouse>(scenario);
+            let nft = ts::take_from_sender<Capsule>(scenario);
+            let mut vector_mizu = vector::empty<Capsule>();
             vector_mizu.push_back(nft);
 
-            mint::add_to_mint_warehouse(
+            orchestrator::stock_warehouse(
                 &mint_cap,
                 &water_cooler,
                 vector_mizu,
                 &mut mint_warehouse
             );
             // the nft's length should be equal to 1 
-            assert_eq(mint::get_mintwarehouse_length(&mint_warehouse), 1);
+            assert_eq(orchestrator::get_mintwarehouse_length(&mint_warehouse), 1);
     
             ts::return_to_sender(scenario, mint_cap);
             ts::return_shared(mint_warehouse);
             ts::return_shared(water_cooler);
         };
         // set mint_price and status
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_cap = ts::take_from_sender<MintAdminCap>(scenario);
-            let mut mint_settings = ts::take_shared<MintSettings>(scenario);
+            let mint_cap = ts::take_from_sender<OrchAdminCap>(scenario);
+            let mut mint_settings = ts::take_shared<Settings>(scenario);
             let price: u64 = 1_000_000_000;
             let status: u8 = 1;
             let phase: u8 = 2;
 
-            mint::set_mint_price(&mint_cap, &mut mint_settings, price);
-            mint::set_mint_status(&mint_cap, &mut mint_settings, status);
-            mint::set_mint_phase(&mint_cap, &mut mint_settings, phase);
+            orchestrator::set_mint_price(&mint_cap, &mut mint_settings, price);
+            orchestrator::set_mint_status(&mint_cap, &mut mint_settings, status);
+            orchestrator::set_mint_phase(&mint_cap, &mut mint_settings, phase);
 
             ts::return_to_sender(scenario, mint_cap);
       
@@ -128,27 +144,41 @@ module galliun::test_whitelist_mint {
         };
 
         // we must create WhitelistTicket 
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_cap = ts::take_from_sender<MintAdminCap>(scenario);
-            let mint_warehouse = ts::take_shared<MintWarehouse>(scenario);
-            mint::create_wl_ticket(&mint_cap, &mint_warehouse, TEST_ADDRESS1, ts::ctx(scenario));
+            let mint_cap = ts::take_from_sender<OrchAdminCap>(scenario);
+            let mint_warehouse = ts::take_shared<WaterCooler>(scenario);
+            orchestrator::create_wl_ticket(&mint_cap, &mint_warehouse, TEST_ADDRESS1, ts::ctx(scenario));
             ts::return_to_sender(scenario, mint_cap);
             ts::return_shared(mint_warehouse);
         };
 
         // we can do whitelist_mint 
-        ts::next_tx(scenario, TEST_ADDRESS1);
+        next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_settings = ts::take_shared<MintSettings>(scenario);
-            let mut mint_warehouse = ts::take_shared<MintWarehouse>(scenario);
+            let settings = ts::take_shared<Settings>(scenario);
+            let mut warehouse = ts::take_shared<Warehouse>(scenario);
+            let factory_settings = ts::take_shared<FactorySetings>(scenario);
+            let water_cooler = ts::take_shared<WaterCooler>(scenario);
+
             let ticket = ts::take_from_sender<WhitelistTicket>(scenario);
             let coin_ = coin::mint_for_testing<SUI>(1_000_000_000, ts::ctx(scenario));
 
-            mint::whitelist_mint(ticket, &mut mint_warehouse, &mint_settings, coin_, ts::ctx(scenario));
+            orchestrator::whitelist_mint(
+                ticket,
+                &factory_settings,
+                &water_cooler,
+                &mut warehouse,
+                &settings,
+                coin_,
+                ts::ctx(scenario)
+            );
             
-            ts::return_shared(mint_warehouse);
-            ts::return_shared(mint_settings);
+            ts::return_shared(warehouse);
+            ts::return_shared(settings);
+            ts::return_shared(water_cooler);
+            ts::return_shared(factory_settings);
+
         };
         ts::end(scenario_test);
     }
