@@ -1,20 +1,11 @@
 module galliun::settings {
   // === Imports ===
-    use sui::{
-        // coin::Coin,
-        coin::{Self, Coin},
-        display::{Self},
-        kiosk::{Self},
-        package::{Self},
-        sui::{SUI},
-        table_vec::{Self, TableVec},
-        transfer_policy::{TransferPolicy},
-    };
+  
     use galliun::{
         // attributes::{Self},
-        factory_settings::{FactorySetings},
-        water_cooler::{Self, WaterCooler},
-        capsule::{Capsule},
+       // factory_settings::{FactorySetings},
+       // water_cooler::{Self, WaterCooler},
+       // capsule::{Capsule},
         // image::{Image},
         // registry::{Registry}
     };

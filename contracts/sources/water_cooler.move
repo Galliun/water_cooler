@@ -14,14 +14,12 @@ module galliun::water_cooler {
         registry::{Self, Registry},
         collection::{Self, Collection},
         attributes::{Self},
-        settings::{Self},
-        warehouse::{Self},
     };
 
     // === Errors ===
 
     const EWaterCoolerAlreadyInitialized: u64 = 0;
-    const ENFTNotFromCollection: u64 = 1;
+   // const ENFTNotFromCollection: u64 = 1;
     const ENFTAlreadyRevealed: u64 = 2;
     const ERegistryDoesNotMatchCooler: u64 = 3;
     const ECollectionDoesNotMatchCooler: u64 = 4;

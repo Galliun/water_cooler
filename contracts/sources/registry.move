@@ -46,7 +46,7 @@ module galliun::registry {
     // === Constants ===
 
     const EInvalidnftNumber: u64 = 1;
-    const ERegistryNotFromThisCollection: u64 = 2;
+    //const ERegistryNotFromThisCollection: u64 = 2;
 
     // === Init Function ===
 

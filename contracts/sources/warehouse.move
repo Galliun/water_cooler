@@ -1,12 +1,6 @@
 module galliun::warehouse {
   // === Imports ===
     use sui::{
-        // coin::Coin,
-        coin::{Self, Coin},
-        display::{Self},
-        kiosk::{Self},
-        package::{Self},
-        sui::{SUI},
         table_vec::{Self, TableVec},
     };
     use galliun::{

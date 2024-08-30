@@ -9,7 +9,6 @@ module galliun::orchestrator {
         kiosk::{Self},
         package::{Self},
         sui::{SUI},
-        table_vec::{Self, TableVec},
         transfer_policy::{TransferPolicy},
     };
     use galliun::{
@@ -32,7 +31,7 @@ module galliun::orchestrator {
     const EInvalidStatusNumber: u64 = 4;
     const EInvalidTicketForMintPhase: u64 = 5;
     const EMintNotLive: u64 = 6;
-    const EMintWarehouseAlreadyInitialized: u64 = 7;
+    //const EMintWarehouseAlreadyInitialized: u64 = 7;
     const EMintWarehouseNotEmpty: u64 = 8;
     const EMintWarehouseNotInitialized: u64 = 9;
     // const EMizuNFTNotRevealed: u64 = 10;
