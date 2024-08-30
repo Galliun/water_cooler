@@ -132,7 +132,7 @@ module galliun::test_whitelist_mint {
             let mut mint_settings = ts::take_shared<Settings>(scenario);
             let price: u64 = 1_000_000_000;
             let status: u8 = 1;
-            let phase: u8 = 1;
+            let phase: u8 = 2;
 
             orchestrator::set_mint_price(&mint_cap, &mut mint_settings, price);
             orchestrator::set_mint_status(&mint_cap, &mut mint_settings, status);
@@ -148,7 +148,7 @@ module galliun::test_whitelist_mint {
         {
             let mint_cap = ts::take_from_sender<OrchAdminCap>(scenario);
             let mint_warehouse = ts::take_shared<WaterCooler>(scenario);
-            orchestrator::create_og_ticket(&mint_cap, &mint_warehouse, TEST_ADDRESS1, ts::ctx(scenario));
+            orchestrator::create_wl_ticket(&mint_cap, &mint_warehouse, TEST_ADDRESS1, ts::ctx(scenario));
             ts::return_to_sender(scenario, mint_cap);
             ts::return_shared(mint_warehouse);
         };
@@ -161,10 +161,10 @@ module galliun::test_whitelist_mint {
             let factory_settings = ts::take_shared<FactorySetings>(scenario);
             let water_cooler = ts::take_shared<WaterCooler>(scenario);
 
-            let ticket = ts::take_from_sender<OriginalGangsterTicket>(scenario);
+            let ticket = ts::take_from_sender<WhitelistTicket>(scenario);
             let coin_ = coin::mint_for_testing<SUI>(1_000_000_000, ts::ctx(scenario));
 
-            orchestrator::og_mint(
+            orchestrator::whitelist_mint(
                 ticket,
                 &factory_settings,
                 &water_cooler,
