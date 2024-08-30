@@ -117,7 +117,6 @@ module galliun::orchestrator {
         factorySettings: &FactorySetings,
         warehouse: &mut Warehouse,
         settings: &Settings,
-        policy: &TransferPolicy<Capsule>,
         payment: Coin<SUI>,        
         ctx: &mut TxContext,
     ) {
@@ -128,7 +127,7 @@ module galliun::orchestrator {
         assert!(settings.status() == MINT_STATE_ACTIVE, EMintNotLive);
         assert!(payment.value() == settings.price(), EInvalidPaymentAmount);
 
-        mint_capsule(factorySettings, waterCooler, warehouse, policy, payment, ctx);
+        mint_capsule(factorySettings, waterCooler, warehouse, payment, ctx);
     }
 
     #[allow(unused_variable)]
@@ -138,7 +137,6 @@ module galliun::orchestrator {
         waterCooler: &WaterCooler,
         warehouse: &mut Warehouse,
         settings: &Settings,
-        policy: &TransferPolicy<Capsule>,
         payment: Coin<SUI>,
         ctx: &mut TxContext,
     ) {
@@ -153,7 +151,7 @@ module galliun::orchestrator {
         assert!(payment.value() == settings.price(), EInvalidPaymentAmount);
 
 
-        mint_capsule(factorySettings, waterCooler, warehouse, policy, payment, ctx);
+        mint_capsule(factorySettings, waterCooler, warehouse, payment, ctx);
         id.delete();
     }
 
@@ -164,7 +162,6 @@ module galliun::orchestrator {
         waterCooler: &WaterCooler,
         warehouse: &mut Warehouse,
         settings: &Settings,
-        policy: &TransferPolicy<Capsule>,
         payment: Coin<SUI>,
         ctx: &mut TxContext,
     ) {
@@ -178,7 +175,7 @@ module galliun::orchestrator {
         assert!(waterCoolerId == object::id(waterCooler), EInvalidTicketForMintPhase);
         assert!(payment.value() == settings.price(), EInvalidPaymentAmount);
 
-        mint_capsule(factorySettings, waterCooler, warehouse, policy, payment, ctx);
+        mint_capsule(factorySettings, waterCooler, warehouse, payment, ctx);
         id.delete();
     }
 
@@ -191,10 +188,10 @@ module galliun::orchestrator {
         mut nfts: vector<Capsule>,
         warehouse: &mut Warehouse,
     ) {
-        assert!(waterCooler.get_is_revealed(), ENFTNotAllReaveled);        
+        assert!(!waterCooler.get_is_revealed(), ENFTNotAllReaveled);        
         assert!(object::id(warehouse) == cap.`for_warehouse`, ENotOwner);        
        
-       warehouse.stock(waterCooler.supply(), nfts);
+        warehouse.stock(waterCooler.supply(), nfts);
     }
 
     /// Destroy an empty mint warehouse when it's no longer needed.
@@ -302,7 +299,6 @@ module galliun::orchestrator {
         factorySettings: &FactorySetings,
         waterCooler: &WaterCooler,
         warehouse: &mut Warehouse,
-        _policy: &TransferPolicy<Capsule>,
         mut payment: Coin<SUI>,
         ctx: &mut TxContext,
     ) {
@@ -337,7 +333,7 @@ module galliun::orchestrator {
 
     // === Test Functions ===
     #[test_only]
-    public fun init_for_mint(ctx: &mut TxContext) {
+    public fun init_for_orchestrator(ctx: &mut TxContext) {
         init(ORCHESTRATOR {}, ctx);
     }
 }

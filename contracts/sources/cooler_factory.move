@@ -68,8 +68,6 @@ module galliun::cooler_factory {
 
         let (settings, warehouse) = orchestrator::create_mint_distributer(ctx);
 
-        
-
         // Create a WaterCooler and give it to the buyer
         let waterCoolerID = water_cooler::create_water_cooler(
             name,
@@ -85,8 +83,6 @@ module galliun::cooler_factory {
 
         settings::transfer_setting(settings, ctx);
         warehouse::transfer_warehouse(warehouse, ctx);
-
-
 
         self.cooler_list.push_back(waterCoolerID);
 

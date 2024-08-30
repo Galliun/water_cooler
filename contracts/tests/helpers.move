@@ -8,8 +8,9 @@ module galliun::helpers {
     };    
     use galliun::{
         cooler_factory::{init_for_cooler},
-        mint::{init_for_mint},
-        water_cooler::{Self, init_for_water}
+        orchestrator::{init_for_orchestrator},
+        water_cooler::{Self, init_for_water},
+        factory_settings::{init_for_factory_settings}
     };
 
     // === Constants ===
@@ -26,10 +27,13 @@ module galliun::helpers {
         clock::share_for_testing(clock);
        };
        {
-        init_for_mint(ts::ctx(scenario));
+        init_for_orchestrator(ts::ctx(scenario));
        };
        {
         init_for_water(ts::ctx(scenario));
+       };
+       {
+        init_for_factory_settings(ts::ctx(scenario));
        };
        scenario_val
     }
