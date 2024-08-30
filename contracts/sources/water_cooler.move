@@ -236,10 +236,10 @@ module galliun::water_cooler {
                 ctx,
             );
 
-            // registry::add_new(number as u16, object::id(&nft), registry, collection);
+            registry::add_new(number as u16, object::id(&nft), registry, collection);
 
             // Add Capsule to factory.
-            // self.nfts.push_back(object::id(&nft));
+            self.nfts.push_back(object::id(&nft));
 
             transfer::public_transfer(nft, ctx.sender());
 
