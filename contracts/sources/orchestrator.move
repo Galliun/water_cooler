@@ -329,8 +329,7 @@ module galliun::orchestrator {
         // Send the payment to the water cooler
         waterCooler.send_fees(payment);
     }
-
-
+    
     // === Test Functions ===
     #[test_only]
     public fun init_for_orchestrator(ctx: &mut TxContext) {

@@ -19,10 +19,6 @@ module galliun::image {
 
     // === Events ===
 
-    
-
-    // === Init Function ===
-
     /// Function to inscribe a new image on-chain
     #[allow(lint(self_transfer))]
     public fun inscribe_image(

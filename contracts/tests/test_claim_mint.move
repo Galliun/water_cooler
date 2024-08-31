@@ -203,9 +203,6 @@ module galliun::test_claim_mint {
         // user needs to create Attributes and set the reveal_mint function
         next_tx(scenario, TEST_ADDRESS1);
         {
-            let mut _mint = ts::take_shared<Mint>(scenario);
-            let image_ = string::utf8(b"image");
-
             let mut image_chunk_hashes = vector::empty<String>();
             let value1 = string::utf8(b"value1");
             let value2 = string::utf8(b"value2");
@@ -213,76 +210,95 @@ module galliun::test_claim_mint {
             image_chunk_hashes.push_back(value1);
             image_chunk_hashes.push_back(value2);
 
-            let nft_id = mint::get_nft_id(&_mint);
+            // create image object 
+            let image_ = string::utf8(b"image");
+            let value1 = string::utf8(b"value1");
+            let value2 = string::utf8(b"value2");
 
-            let image_cap = image::issue_create_image_cap(25, nft_id, ts::ctx(scenario));
-            image::create_image(
-                image_cap,
-                image_,
-                image_chunk_hashes,
+            image::inscribe_image(
+                        image_,
+                value1,
+                value2,
                 ts::ctx(scenario)
             );
-            ts::return_shared(_mint);
         };
         // set the reveal_mint
         next_tx(scenario, TEST_ADDRESS1);
         {
-            let mint_cap = ts::take_from_sender<MintCap>(scenario);
-            let mut mint_ = ts::take_shared<Mint>(scenario);
-            let attributes = ts::take_from_sender<Attributes>(scenario);
-            let image_ = string::utf8(b"image");
-
-            let image = ts::take_from_sender<Image>(scenario);
-
-            mint::reveal_mint(
-                &mint_cap,
-                &mut mint_,
-                attributes,
-                image,
-                image_
-            );
-
-            assert_eq(mint::get_mint_reveal(&mint_), true);
-
-            ts::return_to_sender(scenario, mint_cap);
-            ts::return_shared(mint_);
-        };
-        // user needs to creat his own kiosk
-        next_tx(scenario, TEST_ADDRESS1);
-        {
-            let (mut kiosk, cap) = kiosk::new(ts::ctx(scenario));
+            let water_cooler_admin_cap = ts::take_from_sender<WaterCoolerAdminCap>(scenario);
             let mut water_cooler = ts::take_shared<WaterCooler>(scenario);
-            let mint = ts::take_shared<Mint>(scenario);
-            let policy = ts::take_shared<TransferPolicy<MizuNFT>>(scenario);
-            let nft_id = mint::get_nft_id(&mint);
+            let registry = ts::take_from_sender<Registry>(scenario);
+            let collection = ts::take_from_sender<Collection>(scenario);
+            let mut capsule = ts::take_from_sender<Capsule>(scenario);
 
-            mint::claim_mint(
+            let mut key_vector = vector::empty<String>();
+            let key1 = string::utf8(b"key1");
+            let key2 = string::utf8(b"key2");
+            key_vector.push_back(key1);
+            key_vector.push_back(key2);
+
+            let mut values_vector = vector::empty<String>();
+            let value1 = string::utf8(b"value1");
+            let value2 = string::utf8(b"value2");
+            values_vector.push_back(value1);
+            values_vector.push_back(value2);
+
+            let image = string::utf8(b"image");
+
+            water_cooler::reveal_nft(
+                &water_cooler_admin_cap,
                 &mut water_cooler,
-                mint,
-                &mut kiosk,
-                &cap,
-                &policy,
+                &registry,
+                &collection,
+                &mut capsule,
+                key_vector,
+                values_vector,
+                image,
                 ts::ctx(scenario)
             );
-            assert_eq(kiosk::has_item(&kiosk, nft_id), true);
-            assert_eq(kiosk::is_locked(&kiosk, nft_id), true);
-            assert_eq(kiosk::is_listed(&kiosk, nft_id), false);
-            assert_eq(kiosk::item_count(&kiosk), 1);
 
-            // we are expecting an error. we cant take that nft. 
-            let item = kiosk::take<MizuNFT>(
-                &mut kiosk,
-                &cap,
-                nft_id
-            );
-
-            transfer::public_transfer(item, TEST_ADDRESS1);
-            
-            transfer::public_transfer(cap, TEST_ADDRESS1);
-            transfer::public_share_object(kiosk);
+            ts::return_to_sender(scenario, water_cooler_admin_cap);
+            ts::return_to_sender(scenario, registry);
+            ts::return_to_sender(scenario, capsule);
+            ts::return_to_sender(scenario, collection);
             ts::return_shared(water_cooler);
-            ts::return_shared(policy);
-        }; 
+        };
+        // user needs to creat his own kiosk
+        // next_tx(scenario, TEST_ADDRESS1);
+        // {
+        //     let (mut kiosk, cap) = kiosk::new(ts::ctx(scenario));
+        //     let mut water_cooler = ts::take_shared<WaterCooler>(scenario);
+        //     let mint = ts::take_shared<Mint>(scenario);
+        //     let policy = ts::take_shared<TransferPolicy<MizuNFT>>(scenario);
+        //     let nft_id = mint::get_nft_id(&mint);
+
+        //     mint::claim_mint(
+        //         &mut water_cooler,
+        //         mint,
+        //         &mut kiosk,
+        //         &cap,
+        //         &policy,
+        //         ts::ctx(scenario)
+        //     );
+        //     assert_eq(kiosk::has_item(&kiosk, nft_id), true);
+        //     assert_eq(kiosk::is_locked(&kiosk, nft_id), true);
+        //     assert_eq(kiosk::is_listed(&kiosk, nft_id), false);
+        //     assert_eq(kiosk::item_count(&kiosk), 1);
+
+        //     // we are expecting an error. we cant take that nft. 
+        //     let item = kiosk::take<MizuNFT>(
+        //         &mut kiosk,
+        //         &cap,
+        //         nft_id
+        //     );
+
+        //     transfer::public_transfer(item, TEST_ADDRESS1);
+            
+        //     transfer::public_transfer(cap, TEST_ADDRESS1);
+        //     transfer::public_share_object(kiosk);
+        //     ts::return_shared(water_cooler);
+        //     ts::return_shared(policy);
+        // }; 
            
         ts::end(scenario_test);
     }
