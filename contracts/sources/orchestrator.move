@@ -9,8 +9,9 @@ module galliun::orchestrator {
         kiosk::{Self},
         package::{Self},
         sui::{SUI},
-        table_vec::{Self, TableVec},
+        // table_vec::{Self, TableVec},
         transfer_policy::{TransferPolicy},
+        event
     };
     use galliun::{
         // attributes::{Self},
@@ -32,7 +33,7 @@ module galliun::orchestrator {
     const EInvalidStatusNumber: u64 = 4;
     const EInvalidTicketForMintPhase: u64 = 5;
     const EMintNotLive: u64 = 6;
-    const EMintWarehouseAlreadyInitialized: u64 = 7;
+    // const EMintWarehouseAlreadyInitialized: u64 = 7;
     const EMintWarehouseNotEmpty: u64 = 8;
     const EMintWarehouseNotInitialized: u64 = 9;
     // const EMizuNFTNotRevealed: u64 = 10;
@@ -68,7 +69,13 @@ module galliun::orchestrator {
         phase: u8,
     }
 
-    // === Events ===
+    // ====== Events ======
+
+    public struct NFTMinted has copy, drop {
+        nft_id: ID,
+        kiosk_id: ID,
+        minter: address,
+    }
 
     // Orch Admin cap this can be used to make changes to the orch setting and warehouse
     public struct OrchAdminCap has key { id: UID, `for_settings`: ID, `for_warehouse`: ID}
@@ -259,6 +266,26 @@ module galliun::orchestrator {
         transfer::transfer(og_ticket, owner);
     }
 
+    public fun create_og_ticket_bulk(
+        _: &OrchAdminCap,
+        waterCooler: &WaterCooler,
+        mut addresses: vector<address>,
+        ctx: &mut TxContext
+    ) {
+        while(addresses.length() > 0) {
+            let og_ticket =  OriginalGangsterTicket {
+                id: object::new(ctx),
+                name: water_cooler::name(waterCooler),
+                waterCoolerId: object::id(waterCooler),
+                image_url: water_cooler::placeholder_image(waterCooler),
+                phase: 1
+            };
+
+            transfer::transfer(og_ticket, addresses.pop_back());
+        }
+
+    }
+
     public fun create_wl_ticket(
         _: &OrchAdminCap,
         waterCooler: &WaterCooler,
@@ -274,6 +301,26 @@ module galliun::orchestrator {
         };
 
         transfer::transfer(whitelist_ticket, owner);
+    }
+
+    public fun create_wl_ticket_bulk(
+        _: &OrchAdminCap,
+        waterCooler: &WaterCooler,
+        mut addresses: vector<address>,
+        ctx: &mut TxContext
+    ) {
+
+        while(addresses.length() > 0) {
+            let whitelist_ticket =  WhitelistTicket {
+                id: object::new(ctx),
+                name: water_cooler::name(waterCooler),
+                waterCoolerId: object::id(waterCooler),
+                image_url: water_cooler::placeholder_image(waterCooler),
+                phase: 2
+            };
+
+            transfer::transfer(whitelist_ticket, addresses.pop_back());
+        }
     }
 
     // === Package functions ===
@@ -312,6 +359,12 @@ module galliun::orchestrator {
 
         // Create a new kiosk and its owner capability
         let (mut kiosk, kiosk_owner_cap) = kiosk::new(ctx);
+
+        event::emit(NFTMinted { 
+            nft_id: object::id(&nft),
+            kiosk_id: object::id(&kiosk),
+            minter: ctx.sender(),
+        });
 
         // Place the NFT in the kiosk
         kiosk::place(&mut kiosk, &kiosk_owner_cap, nft);
