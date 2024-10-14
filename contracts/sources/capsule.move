@@ -1,47 +1,41 @@
 module galliun::capsule {
-  // === Imports ===
-    use std::string::{String};
-    use galliun::{
-        image::Image,
-        attributes::Attributes
-    };
+    // === Imports ===
+    use std::string::String;
+    use galliun::attributes::Attributes;
 
     // === Errors ===
 
-    const EAttributesAlreadySet: u64 = 1;
-
     // === Structs ===
-
-    // This is the structure that will be used to create the NFTs
+    /// Represents an NFT capsule with associated metadata.
     public struct Capsule has key, store {
         id: UID,
-        // This name will be joined with the number to create the NFT name
         collection_name: String,
         description: String,
-        // This url will be joined with the id to create the image url
-        image_url: Option<String>,
+        image_url: String,
         number: u64,
-        attributes: Option<Attributes>,
-        // image: Option<Image>,
-        // water_cooler_id: ID
+        attributes: Attributes,
+        // This will be the water cooler ID and it will be used to
+        // diferenciate one NFT collection from  another that was created using
+        // water cooler protocol. (There will never be 2 water coolers with the same ID so this works)
+        // batch_id: ID
     }
 
-    // === Public view functions ===
+    // === Public View Functions ===
 
+    /// Returns the number associated with the capsule.
     public fun number(self: &Capsule): u64 {
         self.number
     }
 
     // === Package Functions ===
 
+    /// Creates a new `Capsule` object.
     public(package) fun new(
         number: u64,
         collection_name: String,
         description: String,
-        image_url: Option<String>,
-        attributes: Option<Attributes>,
-        // image: Option<Image>,
-        // water_cooler_id: ID,
+        image_url: String,
+        attributes: Attributes,
         ctx: &mut TxContext,
     ): Capsule {
         Capsule {
@@ -50,26 +44,12 @@ module galliun::capsule {
             collection_name,
             description,
             image_url,
-            attributes,
-            // image,
-            // water_cooler_id
+            attributes
         }
     }
 
+    /// Returns a mutable reference to the UID of the capsule.
     public(package) fun uid_mut(self: &mut Capsule): &mut UID {
         &mut self.id
-    }
-
-    public(package) fun set_attributes(self: &mut Capsule, attributes: Attributes) {
-        assert!(option::is_none(&self.attributes), EAttributesAlreadySet);
-        option::fill(&mut self.attributes, attributes);
-    }
-
-    // public(package) fun set_image(self: &mut Capsule, image: Image) {
-    //     option::fill(&mut self.image, image);
-    // }
-    
-    public(package) fun set_image_url(self: &mut Capsule, image_url: String) {
-        option::swap_or_fill(&mut self.image_url, image_url);
     }
 }

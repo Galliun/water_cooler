@@ -7,10 +7,7 @@ module galliun::cooler_factory {
         coin::{Coin}
     };
     use galliun::{
-        water_cooler::{Self},
-        orchestrator::{Self},
-        settings::{Self},
-        warehouse::{Self},
+        water_cooler::{Self}
     };
 
     // === Errors ===
@@ -24,7 +21,6 @@ module galliun::cooler_factory {
         id: UID,
         fee: u64,
         treasury: address,
-        cooler_list: vector<ID>
     }
 
     public struct FactoryOwnerCap has key, store { id: UID }
@@ -41,8 +37,7 @@ module galliun::cooler_factory {
             CoolerFactory {
                 id: object::new(ctx),
                 fee: 100_000_000,
-                treasury: @galliun_treasury,
-                cooler_list: vector::empty()
+                treasury: @galliun_treasury
             }
         );
     }
@@ -58,37 +53,20 @@ module galliun::cooler_factory {
         treasury: address, 
         ctx: &mut TxContext
     ) {
-        assert!(payment.value() == self.fee, EInsufficientBalance);
-
-                // Create a Mint distributer and give it to the buyer. 
-        // We do this here to avoid create a dependency circle 
-        // with the Mint and water_cooler modules
-        // let settings = settings::new(waterCoolerID, ctx);
-        // let warehouse = warehouse::new(waterCoolerID, ctx);
-
-        let (settings, warehouse) = orchestrator::create_mint_distributer(ctx);
-
-        
+        assert!(payment.value() == self.fee, EInsufficientBalance);        
 
         // Create a WaterCooler and give it to the buyer
-        let waterCoolerID = water_cooler::create_water_cooler(
+        water_cooler::new(
             name,
             description,
             image_url,
             placeholder_image_url,
             supply,
             treasury,
-            object::id(&settings),
-            object::id(&warehouse),
             ctx
         );
 
-        settings::transfer_setting(settings, ctx);
-        warehouse::transfer_warehouse(warehouse, ctx);
-
-
-
-        self.cooler_list.push_back(waterCoolerID);
+        // self.cooler_list.push_back(waterCoolerID);
 
         // Transfer fees to treasury
         self.send_fees(payment);

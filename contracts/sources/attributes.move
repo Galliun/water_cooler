@@ -11,28 +11,29 @@
 
 module galliun::attributes {
     // === Imports ===
-
-    use std::string::{String};
+    use std::string::String;
     use sui::vec_map::{Self, VecMap};
 
+    // === Error ===
+    const EKeyValueCountMissMatch: u64 = 0;
+
     // === Structs ===
-    
-    /// An object an "attributes" field of a `NFT` object.
+    /// Represents the attributes of an `NFT` object.
     public struct Attributes has key, store {
         id: UID,
         fields: VecMap<String, String>,
     }
 
-    // === Public view functions ===
-
-
-    // === Package functions ===
-    
-    public(package) fun admin_new(
+    // === Package Functions ===
+    /// Creates a new `Attributes` object with the given keys and values.
+    public(package) fun new(
         keys: vector<String>,
         values: vector<String>,
         ctx: &mut TxContext,
     ): Attributes {
+        // Ensure keys and values vectors have the same length
+        assert!(keys.length() == values.length(), EKeyValueCountMissMatch);
+
         Attributes {
             id: object::new(ctx),
             fields: vec_map::from_keys_values(keys, values),
